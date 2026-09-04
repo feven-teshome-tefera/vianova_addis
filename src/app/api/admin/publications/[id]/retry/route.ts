@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {apiError} from "@/lib/api";import {retryPublication} from "@/services/publishing/service";
+export async function POST(_:Request,{params}:{params:Promise<{id:string}>}){try{return NextResponse.json(await retryPublication((await params).id),{status:202})}catch(e){return apiError(e,{context:"admin-retry-publication",defaultMessage:"We couldn’t retry this post. Check the platform connection and try again.",notFoundMessage:"This publishing record no longer exists. Refresh the page."})}}

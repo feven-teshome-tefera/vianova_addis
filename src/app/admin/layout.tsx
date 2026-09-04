@@ -1,0 +1,1 @@
+import {AdminShell} from "@/components/admin/shell";import {db} from "@/lib/db";export const dynamic="force-dynamic";export default async function Layout({children}:{children:React.ReactNode}){const user=await db.user.findFirst({orderBy:{createdAt:"asc"},select:{name:true}});return <AdminShell userName={user?.name??"Admin"}>{children}</AdminShell>}

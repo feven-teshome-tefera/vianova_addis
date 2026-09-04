@@ -1,0 +1,17 @@
+node_modules
+.next
+.env*
+!.env.example
+coverage
+public/uploads/*
+!public/uploads/.gitkeep
+*.log
+*.tsbuildinfo
+.agents/
+.codex/
+prisma/*.db
+prisma/*.db-journal
+*.sqlite
+*.sqlite3
+*.dump
+*.backup

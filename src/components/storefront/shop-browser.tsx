@@ -1,0 +1,6 @@
+"use client";
+import { Search } from "lucide-react";
+import { useMemo, useState } from "react";
+import type { StoreProduct } from "@/lib/storefront-product";
+import { ProductCard } from "./product-card";
+export function ShopBrowser({ products, categories }: { products: StoreProduct[]; categories: string[] }) { const [query,setQuery]=useState(""); const [category,setCategory]=useState("All"); const visible=useMemo(()=>products.filter((product)=>`${product.name} ${product.description} ${product.category.name}`.toLowerCase().includes(query.toLowerCase())&&(category==="All"||product.category.name===category)),[products,query,category]); return <><div className="sf-shop-tools"><label><Search size={18}/><input value={query} onChange={(event)=>setQuery(event.target.value)} placeholder="Search the collection"/></label><select value={category} onChange={(event)=>setCategory(event.target.value)} aria-label="Filter by category"><option>All</option>{categories.map((name)=><option key={name}>{name}</option>)}</select></div><p className="sf-result-count">{visible.length} {visible.length===1?"product":"products"}</p>{visible.length?<div className="sf-product-grid">{visible.map((product)=><ProductCard key={product.id} product={product}/>)}</div>:<div className="sf-empty"><h3>No products found</h3><p>Try another search or category.</p></div>}</>; }

@@ -1,0 +1,3 @@
+import {db} from "@/lib/db";import {formatDate,title} from "@/lib/admin-data";import {publishingIssue} from "@/components/admin/user-errors";import {PublishingClient} from "./publishing-client";
+export const dynamic="force-dynamic";
+export default async function Publishing(){const rows=await db.publication.findMany({include:{product:{select:{name:true}}},orderBy:{createdAt:"desc"}});return <PublishingClient rows={rows.map(r=>{const platform=title(r.platform);return {id:r.id,product:r.product.name,platform,status:title(r.status),scheduled:formatDate(r.scheduledAt),published:formatDate(r.publishedAt),date:(r.scheduledAt??r.publishedAt??r.createdAt).toISOString().slice(0,10),error:publishingIssue(platform,r.errorMessage)}})}/>}

@@ -26,6 +26,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <div><dt className="muted">Phone</dt><dd><a href={`tel:${order.recipientPhone}`}>{order.recipientPhone}</a></dd></div>
           {order.email && <div><dt className="muted">Email</dt><dd><a href={`mailto:${order.email}`}>{order.email}</a></dd></div>}
           <div><dt className="muted">Delivery address</dt><dd>{order.deliveryAddress || "Shared GPS location"}</dd></div>
+          {mapUrl && <div><dt className="muted">Pin accuracy</dt><dd>{order.locationAdjusted ? "Placed by the customer on the map" : order.locationAccuracy !== null ? `Device fix, about \u00b1${Math.round(order.locationAccuracy)} m${order.locationAccuracy > 150 ? " \u2014 approximate, confirm by phone" : ""}` : "Device fix, accuracy unknown"}</dd></div>}
           {mapUrl && <a className="btn w-fit" href={mapUrl} target="_blank" rel="noreferrer"><MapPin size={15}/>Open location in Maps</a>}
           {order.deliveryNotes && <div><dt className="muted">Delivery notes</dt><dd>{order.deliveryNotes}</dd></div>}
         </dl>

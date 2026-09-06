@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
         deliveryAddress: cart.customer.address || null,
         latitude: cart.customer.latitude,
         longitude: cart.customer.longitude,
+        locationAccuracy: cart.customer.accuracy ?? null,
+        locationAdjusted: cart.customer.locationAdjusted ?? false,
         deliveryNotes: cart.customer.deliveryNotes || null,
         subtotal: cart.total,
         total: cart.total,

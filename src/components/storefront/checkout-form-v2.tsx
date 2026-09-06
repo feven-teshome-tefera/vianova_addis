@@ -2,13 +2,18 @@
 
 import Link from "next/link";
 import { ArrowLeft, Check, CreditCard, LoaderCircle, LocateFixed, MapPin } from "lucide-react";
-import { MouseEvent, useEffect, useRef, useState } from "react";
+import { MouseEvent, useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { CartNotice, useCart } from "./cart";
+
+const LocationPicker = dynamic(() => import("./location-picker"), { ssr: false, loading: () => <div className="sf-location-map" style={{ height: 260, borderRadius: 12, background: "#eef1ef" }}/> });
 
 type LocationState = {
   status: "idle" | "loading" | "success" | "error" | "outside";
   latitude?: number;
   longitude?: number;
+  accuracy?: number;
+  adjusted?: boolean;
   message?: string;
 };
 
@@ -18,6 +23,9 @@ export function CheckoutForm() {
   const [error, setError] = useState("");
   const [location, setLocation] = useState<LocationState>({ status: "idle" });
   const requestId = useRef<string | null>(null);
+  const watchRef = useRef<number | null>(null);
+  const sampleTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current); window.clearTimeout(sampleTimer.current ?? undefined); }, []);
   const currency = items[0]?.currency;
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -25,21 +33,45 @@ export function CheckoutForm() {
     if (ready) void reconcile();
   }, [ready, reconcile]);
 
+  const applyPosition = useCallback((latitude: number, longitude: number, accuracy: number | undefined, adjusted: boolean) => {
+    if (distanceFromAddis(latitude, longitude) > 30) {
+      setLocation({ status: "outside", latitude, longitude, accuracy, adjusted, message: "We cannot deliver outside Addis Ababa. If your delivery point is inside the city, drag the pin to it — otherwise please contact us." });
+      return;
+    }
+    const vague = accuracy !== undefined && accuracy > 150;
+    setLocation({
+      status: "success", latitude, longitude, accuracy, adjusted,
+      message: adjusted
+        ? "Pin set to the spot you chose."
+        : vague
+          ? `Your device could only place you within about ${Math.round(accuracy)} m. Drag the pin to your exact gate so the driver finds you.`
+          : `Location received${accuracy !== undefined ? ` (accurate to about ${Math.round(accuracy)} m)` : ""}. Drag the pin if it is not exact.`,
+    });
+  }, []);
+
   function requestLocation() {
     if (!navigator.geolocation) {
       setLocation({ status: "error", message: "This browser cannot share your location. Enter the street, building, or a nearby landmark below." });
       return;
     }
     setLocation({ status: "loading" });
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        if (distanceFromAddis(coords.latitude, coords.longitude) > 30) {
-          setLocation({ status: "outside", latitude: coords.latitude, longitude: coords.longitude, message: "This location is outside Addis Ababa. Via Nova currently delivers only within Addis Ababa." });
-          return;
-        }
-        setLocation({ status: "success", latitude: coords.latitude, longitude: coords.longitude, message: "Location received. We can deliver to this area." });
+    /* A single fix is the worst one: GPS converges over a few seconds, so sample and keep
+       the tightest reading rather than whatever arrives first. */
+    let best: GeolocationPosition | null = null;
+    const settle = () => {
+      window.clearTimeout(sampleTimer.current!);
+      if (watchRef.current !== null) { navigator.geolocation.clearWatch(watchRef.current); watchRef.current = null; }
+      if (best) applyPosition(best.coords.latitude, best.coords.longitude, best.coords.accuracy, false);
+    };
+    watchRef.current = navigator.geolocation.watchPosition(
+      (position) => {
+        if (!best || position.coords.accuracy < best.coords.accuracy) best = position;
+        if (position.coords.accuracy <= 20) settle();
       },
       (locationError) => {
+        if (best) { settle(); return; }
+        window.clearTimeout(sampleTimer.current!);
+        if (watchRef.current !== null) { navigator.geolocation.clearWatch(watchRef.current); watchRef.current = null; }
         const message = locationError.code === locationError.PERMISSION_DENIED
           ? "Location access is turned off. Allow it in your browser settings, or enter the delivery address below."
           : locationError.code === locationError.TIMEOUT
@@ -47,15 +79,16 @@ export function CheckoutForm() {
             : "We could not determine your location. Enter the street, building, or a nearby landmark below.";
         setLocation({ status: "error", message });
       },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
+    sampleTimer.current = window.setTimeout(settle, 8000);
   }
 
   async function placeOrder(event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault();
     if (validating) return;
     if (location.status === "outside") {
-      setError("We currently deliver only within Addis Ababa.");
+      setError("We cannot deliver outside Addis Ababa. Please contact us and we will help.");
       return;
     }
     const form = event.currentTarget.form;
@@ -82,6 +115,8 @@ export function CheckoutForm() {
             deliveryNotes: data.get("deliveryNotes") || undefined,
             latitude: location.status === "success" ? location.latitude : undefined,
             longitude: location.status === "success" ? location.longitude : undefined,
+            accuracy: location.status === "success" ? location.accuracy : undefined,
+            locationAdjusted: location.status === "success" ? location.adjusted ?? false : undefined,
           },
         }),
       });
@@ -127,6 +162,8 @@ export function CheckoutForm() {
         <div className="sf-form-section"><span className="sf-kicker">Delivery · Addis Ababa only</span><h2>Delivery location</h2></div>
         <div className="sf-location-box"><MapPin/><div><strong>Share your current location</strong><p>Turn on location so we can confirm that your delivery point is within Addis Ababa.</p></div><button type="button" onClick={requestLocation} disabled={location.status === "loading"}>{location.status === "loading" ? <LoaderCircle className="spin"/> : location.status === "success" ? <Check/> : <LocateFixed/>}{location.status === "loading" ? "Locating…" : location.status === "success" ? "Location added" : "Use my location"}</button></div>
         {location.message && <p className={`sf-location-message ${location.status}`} role={location.status === "error" || location.status === "outside" ? "alert" : "status"}>{location.message}</p>}
+        {location.status === "outside" && <Link className="sf-button" href="/contact">Contact Via Nova</Link>}
+        {location.latitude !== undefined && location.longitude !== undefined && <><LocationPicker latitude={location.latitude} longitude={location.longitude} onChange={(latitude, longitude) => applyPosition(latitude, longitude, undefined, true)}/><small className="sf-field-help">Drag the pin (or tap the map) to mark your exact gate.</small></>}
         <label>Street and delivery address {location.status === "success" && <small>optional when location is shared</small>}<input name="address" required={needsManual} autoComplete="street-address" placeholder="Street, building, house number or nearby landmark" onInvalid={(event) => event.currentTarget.setCustomValidity("Enter the street, building, or a nearby landmark for delivery.")} onInput={(event) => event.currentTarget.setCustomValidity("")}/></label>
         <label>Delivery notes <small>optional</small><textarea name="deliveryNotes" rows={3} placeholder="Floor, gate instructions or preferred delivery time"/></label>
 
@@ -134,7 +171,7 @@ export function CheckoutForm() {
         <div className="sf-form-section"><span className="sf-kicker">Payment</span><h2>Online payments</h2></div>
         <div className="sf-payment-options sf-payment-coming"><button type="button" disabled><CreditCard/><span><strong>Chapa</strong><small>Under construction · Coming soon</small></span></button><button type="button" disabled><CreditCard/><span><strong>Stripe</strong><small>Under construction · Coming soon</small></span></button></div>
         <p className="sf-secure">Place the order now. Via Nova will contact the recipient to confirm delivery and payment.</p>
-        <button type="button" className="sf-button sf-button-dark sf-place-order" disabled={placing || validating} onClick={placeOrder}>{validating ? <><LoaderCircle className="spin"/> Checking bag…</> : placing ? <><LoaderCircle className="spin"/> Saving order…</> : "Place order"}</button>
+        <button type="button" className="sf-button sf-button-dark sf-place-order" disabled={placing || validating || location.status === "outside"} onClick={placeOrder}>{location.status === "outside" ? "Outside our delivery area" : validating ? <><LoaderCircle className="spin"/> Checking bag…</> : placing ? <><LoaderCircle className="spin"/> Saving order…</> : "Place order"}</button>
       </form>
       <aside className="sf-order-summary"><h2>Order summary</h2>{items.map((item) => <div className="sf-summary-item" key={item.lineId}>{item.image ? <img src={item.image} alt=""/> : <span/>}<div><strong>{item.name}</strong>{item.sizeLabel&&<small>Size {item.sizeLabel}</small>}<small>Quantity {item.quantity}</small></div><b>{money(item.price * item.quantity, item.currency)}</b></div>)}<div className="sf-summary-total"><span>Total</span><strong>{money(total, currency)}</strong></div></aside>
     </div>

@@ -44,6 +44,8 @@ const customerSchema = z
     deliveryNotes: z.string().trim().max(300).optional(),
     latitude: z.number().min(-90).max(90).optional(),
     longitude: z.number().min(-180).max(180).optional(),
+    accuracy: z.number().nonnegative().max(100000).optional(),
+    locationAdjusted: z.boolean().optional(),
   })
   .superRefine((customer, context) => {
     const hasLatitude = customer.latitude !== undefined;
@@ -70,7 +72,7 @@ const customerSchema = z
       context.addIssue({
         code: "custom",
         path: ["latitude"],
-        message: "Via Nova currently delivers only within Addis Ababa.",
+        message: "We cannot deliver outside Addis Ababa. Please contact Via Nova.",
       });
     }
   });

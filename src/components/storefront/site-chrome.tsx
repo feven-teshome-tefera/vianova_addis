@@ -2,11 +2,20 @@
 
 import Link from "next/link";
 import { Camera, Mail, Menu, Music2, Send } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CartButton } from "./cart";
 
 export function StorefrontHeader({ overlay = false }: { overlay?: boolean } = {}) {
   const [scrolled, setScrolled] = useState(false);
+  const menu = useRef<HTMLDetailsElement | null>(null);
+  /* <details> has no dismiss behaviour of its own, so a tap anywhere else has to close it. */
+  useEffect(() => {
+    const closeOutside = (event: PointerEvent) => { const node = menu.current; if (node?.open && !node.contains(event.target as Node)) node.open = false; };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape" && menu.current?.open) menu.current.open = false; };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => { document.removeEventListener("pointerdown", closeOutside); document.removeEventListener("keydown", closeOnEscape); };
+  }, []);
 
   useEffect(() => {
     const updateHeader = () => setScrolled(window.scrollY > 12);
@@ -16,7 +25,7 @@ export function StorefrontHeader({ overlay = false }: { overlay?: boolean } = {}
   }, []);
 
   const className = ["sf-header", overlay && "sf-header-overlay", scrolled && "is-scrolled"].filter(Boolean).join(" ");
-  return <header className={className}><div className="sf-shell sf-nav"><Link className="sf-brand" href="/" aria-label="Via Nova Addis home"><span className="sf-logo-image"><img src="/assets/via-nova-tiktok-app-icon.png" alt=""/></span><span className="sf-logo"><span>VIA</span><span>NOVA</span><small>ADDIS</small></span></Link><nav aria-label="Main navigation"><Link href="/shop">Shop</Link><Link href="/about">Maison</Link></nav><div className="sf-nav-actions"><Link className="sf-nav-cta" href="/contact">Contact</Link><CartButton/><details className="sf-mobile-menu"><summary aria-label="Open navigation"><Menu/></summary><div><Link href="/shop">Shop</Link><Link href="/about">Maison</Link><Link href="/contact">Contact</Link></div></details></div></div></header>;
+  return <header className={className}><div className="sf-shell sf-nav"><Link className="sf-brand" href="/" aria-label="Via Nova Addis home"><span className="sf-logo-image"><img src="/assets/via-nova-tiktok-app-icon.png" alt=""/></span><span className="sf-logo"><span>VIA</span><span>NOVA</span><small>ADDIS</small></span></Link><nav aria-label="Main navigation"><Link href="/shop">Shop</Link><Link href="/about">Maison</Link></nav><div className="sf-nav-actions"><Link className="sf-nav-cta" href="/contact">Contact</Link><CartButton/><details className="sf-mobile-menu" ref={menu}><summary aria-label="Open navigation"><Menu/></summary><div onClick={() => { if (menu.current) menu.current.open = false; }}><Link href="/shop">Shop</Link><Link href="/about">Maison</Link><Link href="/contact">Contact</Link></div></details></div></div></header>;
 }
 
 export function StorefrontFooter() {

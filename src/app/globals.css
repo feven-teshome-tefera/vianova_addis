@@ -71,3 +71,14 @@
 .sf-links-item.is-primary small{color:#b7ada0}
 .sf-links-item.is-primary:hover{background:#8b612f;border-color:#8b612f}
 .sf-links-foot{margin-top:34px;color:#8b8071;font-size:11px;letter-spacing:.1em}
+
+/* Shop filters: fit the phone screen instead of scrolling sideways.
+   min-width:0 is the actual fix — without it a long query stretches the flex item
+   and pushes the whole row wider than the viewport. */
+.storefront .sf-shop-tools label{min-width:0}
+.storefront .sf-shop-tools input{min-width:0;width:100%;text-overflow:ellipsis}
+@media(max-width:640px){
+  .storefront .sf-shop-tools{display:grid;grid-template-columns:1fr;gap:0;overflow:visible;padding:4px 0}
+  .storefront .sf-shop-tools label{width:100%;min-width:0;padding:13px 2px;border-bottom:1px solid #e2d9cd}
+  .storefront .sf-shop-tools select{width:100%;min-width:0;border-left:0;padding:13px 2px}
+}

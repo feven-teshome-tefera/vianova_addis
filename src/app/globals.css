@@ -52,3 +52,22 @@
 .storefront .sf-header-overlay{margin-bottom:0;background:#d8c19f}
 @media(min-width:801px){.storefront .sf-header-overlay+main .sf-hero-grid{min-height:calc(100vh - 80px)}}
 @media(max-width:800px){.storefront .sf-nav{height:68px}.storefront .sf-header-overlay{margin-bottom:0}}
+
+/* Link-in-bio landing for the printed QR code */
+.sf-links-page{display:grid;place-items:center;min-height:100vh;background:#ece5da;padding:44px 20px}
+.sf-links{width:min(430px,100%);text-align:center}
+.sf-links-brand{display:inline-flex;justify-content:center;margin-bottom:30px}
+.sf-links h1{font-size:clamp(38px,10vw,52px);line-height:.95;letter-spacing:-.035em;margin:14px 0 12px}
+.sf-links-intro{max-width:330px;margin:0 auto 34px;color:#6b6153;font:15px/1.6 Georgia,serif}
+.sf-links-list{display:grid;gap:11px;text-align:left}
+.sf-links-item{display:flex;align-items:center;gap:15px;min-height:66px;padding:14px 18px;border:1px solid #cfc4b4;background:#fbfaf7;transition:transform .15s ease,border-color .15s ease}
+.sf-links-item:hover{border-color:#191714;transform:translateY(-1px)}
+.sf-links-item svg{width:20px;height:20px;flex:0 0 auto;color:#8b612f}
+.sf-links-item span{display:grid;gap:3px;min-width:0}
+.sf-links-item strong{font-size:13px;letter-spacing:.06em}
+.sf-links-item small{color:#7c7265;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sf-links-item.is-primary{background:#191714;border-color:#191714;color:#fbfaf7}
+.sf-links-item.is-primary svg{color:#d3b07b}
+.sf-links-item.is-primary small{color:#b7ada0}
+.sf-links-item.is-primary:hover{background:#8b612f;border-color:#8b612f}
+.sf-links-foot{margin-top:34px;color:#8b8071;font-size:11px;letter-spacing:.1em}

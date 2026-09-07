@@ -17,7 +17,6 @@ export default function LinksPage() {
   return <div className="storefront sf-links-page">
     <main className="sf-links">
       <Link className="sf-brand sf-links-brand" href="/" aria-label="Via Nova Addis home"><span className="sf-logo-image"><img src="/assets/via-nova-tiktok-app-icon.png" alt=""/></span><span className="sf-logo"><span>VIA</span><span>NOVA</span><small>ADDIS</small></span></Link>
-      <p className="sf-kicker">Addis Ababa</p>
       <h1>Find us everywhere</h1>
       <p className="sf-links-intro">Italian-inspired pieces, delivered across Addis Ababa.</p>
       <nav className="sf-links-list" aria-label="Via Nova channels">
